@@ -1,33 +1,79 @@
-// index.js
 const express = require("express");
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Parse incoming requests with urlencoded payloads
 app.use(express.urlencoded({ extended: true }));
 
 app.post("/ussd", (req, res) => {
-    const { sessionId, serviceCode, phoneNumber, text } = req.body;
+    let { sessionId, serviceCode, phoneNumber, text } = req.body;
 
     let response = "";
+    let inputs = text.split("*");
 
+    // Handle "0" to go back
+    if (inputs[inputs.length - 1] === "0") {
+        inputs.pop(); // Remove the '0'
+        inputs.pop(); // Remove the previous step
+        text = inputs.join("*");
+        inputs = text.split("*");
+    }
+
+    const level = inputs.length;
+    const lang = inputs[0]; // 1 = English, 2 = Kinyarwanda
+
+    // Menu Flow
     if (text === "") {
-        // This is the first request
-        response = `CON Welcome to My USSD App
+        response = `CON Welcome / Murakaza neza
+1. English
+2. Kinyarwanda`;
+    }
+    else if (level === 1) {
+        if (lang === "1") {
+            response = `CON Main Menu:
 1. Check Balance
-2. Buy Data`;
-    } else if (text === "1") {
-        response = `END Your balance is GHS 50.00`;
-    } else if (text === "2") {
-        response = `CON Choose data plan
+2. Buy Data
+0. Back`;
+        } else if (lang === "2") {
+            response = `CON Ibikubiyeho:
+1. Kureba amafaranga
+2. Kugura internet
+0. Subira inyuma`;
+        } else {
+            response = `END Invalid language selection.`;
+        }
+    }
+    else if (level === 2 && inputs[1] === "1") {
+        // Option 1 from main menu - Check Balance
+        response = lang === "1"
+            ? `END Your balance is GHS 50.00`
+            : `END Ufite amafaranga 50.00 Frw`;
+    }
+    else if (level === 2 && inputs[1] === "2") {
+        // Option 2 from main menu - Buy Data
+        response = lang === "1"
+            ? `CON Choose data plan:
 1. 1GB - GHS 10
-2. 5GB - GHS 45`;
-    } else if (text === "2*1") {
-        response = `END You have successfully bought 1GB for GHS 10.`;
-    } else if (text === "2*2") {
-        response = `END You have successfully bought 5GB for GHS 45.`;
-    } else {
-        response = `END Invalid input.`;
+2. 5GB - GHS 45
+0. Back`
+            : `CON Hitamo internet:
+1. 1GB - 1000 Frw
+2. 5GB - 4500 Frw
+0. Subira inyuma`;
+    }
+    else if (level === 3 && inputs[1] === "2" && inputs[2] === "1") {
+        response = lang === "1"
+            ? `END You have successfully bought 1GB for GHS 10.`
+            : `END Waguzwe 1GB kuri 1000 Frw.`;
+    }
+    else if (level === 3 && inputs[1] === "2" && inputs[2] === "2") {
+        response = lang === "1"
+            ? `END You have successfully bought 5GB for GHS 45.`
+            : `END Waguzwe 5GB kuri 4500 Frw.`;
+    }
+    else {
+        response = lang === "1"
+            ? `END Invalid input.`
+            : `END Icyo winjije si cyo.`;
     }
 
     res.set("Content-Type", "text/plain");
@@ -37,3 +83,4 @@ app.post("/ussd", (req, res) => {
 app.listen(PORT, () => {
     console.log(`USSD app running on http://localhost:${PORT}`);
 });
+
