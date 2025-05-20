@@ -111,8 +111,8 @@ app.listen(PORT, () => {
     console.log(`USSD app running on http://localhost:${PORT}`);
 });
 
-
 app.listen(PORT, () => {
     console.log(`USSD app running on http://localhost:${PORT}`);
 });
+
 
